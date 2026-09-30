@@ -328,9 +328,17 @@ export function Home() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex items-center justify-between px-4 py-3">
         <h1 className="text-xl font-semibold">{COPY.title}</h1>
-        <a className="text-blue-700 underline" href="/people/new">
-          {COPY.add}
-        </a>
+        <nav className="flex gap-4 text-sm">
+          <a className="text-blue-700 underline" href="/changes">
+            {COPY.changesTitle}
+          </a>
+          <a className="text-blue-700 underline" href="/bands">
+            {COPY.bandsNav}
+          </a>
+          <a className="text-blue-700 underline" href="/people/new">
+            {COPY.add}
+          </a>
+        </nav>
       </header>
       <FilterBar filters={filters} />
       <main className="mx-auto max-w-6xl">

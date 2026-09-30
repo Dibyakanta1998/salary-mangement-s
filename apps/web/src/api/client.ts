@@ -208,3 +208,57 @@ export async function updatePerson(employeeId: string, body: UpdatePersonBody): 
     body: JSON.stringify(body),
   });
 }
+
+export type ChangeRow = HistoryRow & { employeeId: string; legalName: string };
+
+export type BandRow = {
+  country: string;
+  level: string;
+  currency: string;
+  minBase: string;
+  maxBase: string;
+};
+
+export type OutsideRow = {
+  employeeId: string;
+  legalName: string;
+  base: string;
+  min: string;
+  max: string;
+  gap: string;
+  side: "under" | "over";
+};
+
+export function fetchChanges(signal?: AbortSignal): Promise<ChangeRow[]> {
+  return getJson<ChangeRow[]>("/api/changes", signal);
+}
+
+export function fetchBands(signal?: AbortSignal): Promise<BandRow[]> {
+  return getJson<BandRow[]>("/api/bands", signal);
+}
+
+export function fetchOutside(country: string, level: string, signal?: AbortSignal): Promise<OutsideRow[]> {
+  const params = new URLSearchParams({ country, level });
+  return getJson<OutsideRow[]>(`/api/bands/outside?${params.toString()}`, signal);
+}
+
+function bandPath(country: string, level: string): string {
+  return `/api/bands/${encodeURIComponent(country)}/${encodeURIComponent(level)}`;
+}
+
+export function saveBand(
+  country: string,
+  level: string,
+  body: { minBase: string; maxBase: string },
+): Promise<BandRow> {
+  return sendJson<BandRow>(bandPath(country, level), {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteBand(country: string, level: string): Promise<void> {
+  const response = await fetch(bandPath(country, level), { method: "DELETE" });
+  if (!response.ok) throw await errorFrom(response);
+}
