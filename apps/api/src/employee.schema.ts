@@ -26,11 +26,12 @@ function isCalendarDate(value: string): boolean {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
+function blankToNull(schema: z.ZodType<string>) {
+  return z.union([schema, z.literal(""), z.null()]).transform((value) => value || null);
+}
+
 function emptyToNull(schema: z.ZodType<string>) {
-  return z
-    .union([schema, z.literal(""), z.null()])
-    .optional()
-    .transform((value) => value || null);
+  return blankToNull(schema).optional().transform((value) => value ?? null);
 }
 
 export const createPersonSchema = z
@@ -71,5 +72,30 @@ export const personQuerySchema = z.object({
   employeeId: z.string().trim().max(64).optional(),
 });
 
+export const updatePersonSchema = z
+  .object({
+    legalName: z.string().trim().min(1).max(200),
+    country: z.enum(countryNames),
+    level: z.enum(levelNames),
+    annualBase: money,
+    status: z.enum(["active", "left"]),
+    department: blankToNull(z.enum(departmentNames)),
+    managerEmployeeId: blankToNull(z.string().trim().min(1).max(64)),
+    startDate: blankToNull(calendarDate),
+    leaveDate: blankToNull(calendarDate),
+    note: z.string().trim().max(1000).optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.status === "left" && !value.leaveDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Leave date is required when status is left",
+        path: ["leaveDate"],
+      });
+    }
+  });
+
 export type CreatePerson = z.infer<typeof createPersonSchema>;
+export type UpdatePerson = z.infer<typeof updatePersonSchema>;
 export type ListPeopleQuery = z.infer<typeof listPeopleQuerySchema>;

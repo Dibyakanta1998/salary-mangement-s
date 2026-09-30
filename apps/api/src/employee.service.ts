@@ -1,18 +1,18 @@
 import {
   Op,
   QueryTypes,
+  Transaction,
   UniqueConstraintError,
   col,
   fn,
   where,
-  type Transaction,
   type WhereOptions,
 } from "sequelize";
 import lookups from "./lookups";
 import { Employee } from "./db/employee";
 import { SalaryChange } from "./db/salaryChange";
 import { currentTestTransaction, sequelize } from "./db/sequelize";
-import type { CreatePerson, ListPeopleQuery } from "./employee.schema";
+import type { CreatePerson, ListPeopleQuery, UpdatePerson } from "./employee.schema";
 
 export class AppError extends Error {
   constructor(
@@ -191,6 +191,112 @@ async function recentHistory(employeeId: string): Promise<HistoryJson[]> {
     newStatus: row.newStatus,
     note: row.note,
   }));
+}
+
+type StoredPerson = {
+  legalName: string;
+  country: string;
+  currency: string;
+  level: string;
+  annualBase: string;
+  status: string;
+  department: string | null;
+  managerEmployeeId: string | null;
+  startDate: string | null;
+  leaveDate: string | null;
+};
+
+function formPerson(input: UpdatePerson): StoredPerson {
+  return {
+    legalName: input.legalName,
+    country: input.country,
+    currency: currencyFor(input.country),
+    level: input.level,
+    annualBase: decimalString(input.annualBase),
+    status: input.status,
+    department: input.department,
+    managerEmployeeId: input.managerEmployeeId,
+    startDate: input.startDate,
+    leaveDate: input.status === "active" ? null : input.leaveDate,
+  };
+}
+
+function readPerson(row: Employee): StoredPerson {
+  return {
+    legalName: row.legalName,
+    country: row.country,
+    currency: row.currency.trim(),
+    level: row.level,
+    annualBase: decimalString(row.annualBase),
+    status: row.status,
+    department: row.department,
+    managerEmployeeId: row.managerEmployeeId,
+    startDate: row.startDate,
+    leaveDate: row.leaveDate,
+  };
+}
+
+function samePerson(before: StoredPerson, after: StoredPerson): boolean {
+  return (
+    before.legalName === after.legalName &&
+    before.country === after.country &&
+    before.currency === after.currency &&
+    before.level === after.level &&
+    before.annualBase === after.annualBase &&
+    before.status === after.status &&
+    before.department === after.department &&
+    before.managerEmployeeId === after.managerEmployeeId &&
+    before.startDate === after.startDate &&
+    before.leaveDate === after.leaveDate
+  );
+}
+
+function tracksHistory(before: StoredPerson, after: StoredPerson): boolean {
+  return before.annualBase !== after.annualBase || before.country !== after.country || before.status !== after.status;
+}
+
+function requiredNote(note: string | undefined): string | null {
+  const trimmed = note?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+async function insertHistory(
+  employeeId: string,
+  before: StoredPerson,
+  after: StoredPerson,
+  note: string,
+  transaction: Transaction,
+): Promise<void> {
+  await SalaryChange.create(
+    {
+      employeeId,
+      oldBase: before.annualBase,
+      newBase: after.annualBase,
+      oldCountry: before.country === after.country ? null : before.country,
+      newCountry: after.country,
+      oldStatus: before.status,
+      newStatus: after.status,
+      note,
+    },
+    { transaction },
+  );
+}
+
+export async function updateEmployee(employeeId: string, input: UpdatePerson): Promise<PersonJson> {
+  return inTransaction(async (transaction) => {
+    const row = await Employee.findByPk(employeeId, {
+      transaction,
+      lock: Transaction.LOCK.UPDATE,
+    });
+    if (!row) throw new AppError(404, "NOT_FOUND", "Person not found");
+    const before = readPerson(row);
+    const after = formPerson(input);
+    const note = requiredNote(input.note);
+    if (tracksHistory(before, after) && !note) throw new AppError(400, "VALIDATION_ERROR", "Note is required");
+    if (!samePerson(before, after)) await row.update(after, { transaction });
+    if (note && tracksHistory(before, after)) await insertHistory(employeeId, before, after, note, transaction);
+    return toPerson(row);
+  });
 }
 
 export async function getEmployee(employeeId: string) {
