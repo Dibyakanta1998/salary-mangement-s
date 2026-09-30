@@ -1,0 +1,9 @@
+{
+  "name": "salary-management",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/lookups"
+  ]
+}

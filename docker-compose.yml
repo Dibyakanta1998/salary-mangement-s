@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: salary
+      POSTGRES_PASSWORD: salary
+      POSTGRES_DB: salary
+    volumes:
+      - salary_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salary -d salary"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      POSTGRES_USER: salary
+      POSTGRES_PASSWORD: salary
+      POSTGRES_DB: salary
+      PGHOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  salary_data:
