@@ -1,6 +1,16 @@
 import { createRoot } from "react-dom/client";
-import "./lookups";
+import "./index.css";
+import { COPY } from "./copy";
+import { Home } from "./pages/Home";
 
-const pageText = "Salary management";
+function Page() {
+  const path = window.location.pathname;
+  if (path === "/people/new") return <p>{COPY.addPerson}</p>;
+  if (path === "/people") {
+    const id = new URLSearchParams(window.location.search).get("id") ?? "";
+    return <p>{id}</p>;
+  }
+  return <Home />;
+}
 
-createRoot(document.getElementById("root")!).render(<p>{pageText}</p>);
+createRoot(document.getElementById("root")!).render(<Page />);
