@@ -10,6 +10,7 @@ import {
 import { COPY } from "../copy";
 import { formatAmount } from "../formatAmount";
 import lookups from "../lookups";
+import { navigate } from "../navigate";
 import {
   Main,
   Notice,
@@ -312,7 +313,7 @@ export function Person({ employeeId }: { employeeId: string | null }) {
     try {
       if (!person) {
         const created = await createPerson({ ...personFields(form), employeeId: form.employeeId.trim() });
-        window.location.assign(`/people?id=${encodeURIComponent(created.employeeId)}`);
+        navigate(`/people?id=${encodeURIComponent(created.employeeId)}`);
         return;
       }
       const fields = personFields(form);

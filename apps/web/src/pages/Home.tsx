@@ -13,6 +13,7 @@ import {
 import { COPY } from "../copy";
 import { formatAmount } from "../formatAmount";
 import lookups from "../lookups";
+import { navigate } from "../navigate";
 import {
   Main,
   Notice,
@@ -49,8 +50,7 @@ function readForm(form: HTMLFormElement): ListFilters {
 }
 
 function go(href: string): void {
-  const current = `${window.location.pathname}${window.location.search}`;
-  if (href !== current) window.location.assign(href);
+  navigate(href);
 }
 
 function onFilterChange(event: FormEvent<HTMLFormElement>): void {
@@ -66,6 +66,7 @@ function onFilterSubmit(event: FormEvent<HTMLFormElement>): void {
 function FilterBar({ filters }: { filters: ListFilters }) {
   return (
     <form
+      key={`${filters.q}|${filters.country}|${filters.department}|${filters.level}|${filters.status}`}
       className="sticky top-14 z-10 border-b border-slate-200 bg-slate-100"
       onChange={onFilterChange}
       onSubmit={onFilterSubmit}
@@ -350,7 +351,7 @@ function useHomeData(filters: ListFilters): { load: Load; retry: () => void } {
   useEffect(() => {
     const controller = new AbortController();
     const query = { q, country, department, level, status, page };
-    setLoad({ phase: "loading" });
+    setLoad((current) => (current.phase === "ready" ? current : { phase: "loading" }));
     Promise.all([
       fetchPeople(query, controller.signal),
       fetchFigures({ country, department, level }, controller.signal),
