@@ -6,6 +6,7 @@ dev:
 test:
 	docker compose up -d db
 	docker compose run --rm --build -e POSTGRES_DB=salary_test api node --test --test-concurrency=1 dist/employee.test.js dist/figures.test.js dist/bands.test.js dist/changes.test.js
+	npm test --workspace=@salary/web
 
 reset:
 	docker compose down -v
