@@ -174,15 +174,19 @@ async function monthlyPay(employeeId: string): Promise<string> {
   return decimalString(rows[0].monthly_base);
 }
 
-async function recentHistory(employeeId: string): Promise<HistoryJson[]> {
-  const rows = await SalaryChange.findAll({
-    where: { employeeId },
-    order: [["changedAt", "DESC"]],
-    limit: 10,
-    ...useTransaction(),
-  });
-  return rows.map((row) => ({
-    changedAt: row.changedAt instanceof Date ? row.changedAt.toISOString() : new Date(row.changedAt).toISOString(),
+function toHistory(row: {
+  changedAt: Date | string;
+  oldBase: string;
+  newBase: string;
+  oldCountry: string | null;
+  newCountry: string;
+  oldStatus: string;
+  newStatus: string;
+  note: string;
+}): HistoryJson {
+  const changedAt = row.changedAt instanceof Date ? row.changedAt : new Date(row.changedAt);
+  return {
+    changedAt: changedAt.toISOString(),
     oldBase: decimalString(row.oldBase),
     newBase: decimalString(row.newBase),
     oldCountry: row.oldCountry,
@@ -190,7 +194,34 @@ async function recentHistory(employeeId: string): Promise<HistoryJson[]> {
     oldStatus: row.oldStatus,
     newStatus: row.newStatus,
     note: row.note,
-  }));
+  };
+}
+
+async function recentHistory(employeeId: string): Promise<HistoryJson[]> {
+  const rows = await SalaryChange.findAll({
+    where: { employeeId },
+    order: [["changedAt", "DESC"]],
+    limit: 10,
+    ...useTransaction(),
+  });
+  return rows.map((row) => toHistory(row));
+}
+
+export type ChangeJson = HistoryJson & { employeeId: string; legalName: string };
+
+export async function listRecentChanges(): Promise<ChangeJson[]> {
+  const rows = await sequelize.query<ChangeJson>(
+    `SELECT sc.employee_id AS "employeeId", e.legal_name AS "legalName",
+            sc.changed_at AS "changedAt", sc.old_base::text AS "oldBase", sc.new_base::text AS "newBase",
+            sc.old_country AS "oldCountry", sc.new_country AS "newCountry",
+            sc.old_status AS "oldStatus", sc.new_status AS "newStatus", sc.note
+     FROM salary_changes sc
+     JOIN employees e ON e.employee_id = sc.employee_id
+     WHERE sc.changed_at >= now() - interval '30 days'
+     ORDER BY sc.changed_at DESC`,
+    { type: QueryTypes.SELECT, ...useTransaction() },
+  );
+  return rows.map((row) => ({ employeeId: row.employeeId, legalName: row.legalName, ...toHistory(row) }));
 }
 
 type StoredPerson = {

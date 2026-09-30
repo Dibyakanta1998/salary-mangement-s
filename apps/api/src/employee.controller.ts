@@ -1,6 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
 import { createPersonSchema, listPeopleQuerySchema, personQuerySchema, updatePersonSchema } from "./employee.schema";
-import { AppError, createEmployee, getEmployee, listEmployees, updateEmployee } from "./employee.service";
+import {
+  AppError,
+  createEmployee,
+  getEmployee,
+  listEmployees,
+  listRecentChanges,
+  updateEmployee,
+} from "./employee.service";
 
 function asyncRoute(handler: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -22,6 +29,10 @@ export const getPerson = asyncRoute(async (req, res) => {
   const query = personQuerySchema.parse(req.query);
   if (!query.employeeId) throw new AppError(404, "NOT_FOUND", "Person not found");
   res.json(await getEmployee(query.employeeId));
+});
+
+export const listChanges = asyncRoute(async (_req, res) => {
+  res.json(await listRecentChanges());
 });
 
 export const patchPerson = asyncRoute(async (req, res) => {
