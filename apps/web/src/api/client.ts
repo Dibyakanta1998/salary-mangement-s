@@ -121,3 +121,90 @@ export function fetchFigures(
 ): Promise<Figures> {
   return getJson<Figures>(figuresQuery(filters), signal);
 }
+
+export type HistoryRow = {
+  changedAt: string;
+  oldBase: string;
+  newBase: string;
+  oldCountry: string | null;
+  newCountry: string;
+  oldStatus: string;
+  newStatus: string;
+  note: string;
+};
+
+export type PersonDetail = PersonRow & {
+  managerEmployeeId: string | null;
+  startDate: string | null;
+  leaveDate: string | null;
+  monthlyBase: string;
+  lastChangeAt: string | null;
+  lastNote: string | null;
+  history: HistoryRow[];
+};
+
+export type PersonFields = {
+  legalName: string;
+  country: string;
+  level: string;
+  annualBase: string;
+  status: "active" | "left";
+  department: string | null;
+  managerEmployeeId: string | null;
+  startDate: string | null;
+  leaveDate: string | null;
+};
+
+export type CreatePersonBody = PersonFields & { employeeId: string };
+export type UpdatePersonBody = PersonFields & { note?: string };
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+async function errorFrom(response: Response): Promise<ApiError> {
+  try {
+    const body = (await response.json()) as {
+      error?: { code?: string; message?: string; details?: { message?: string }[] | null };
+    };
+    const detail = body.error?.details?.find((issue) => issue.message)?.message;
+    return new ApiError(response.status, body.error?.code ?? "", detail || body.error?.message || "");
+  } catch {
+    return new ApiError(response.status, "", "");
+  }
+}
+
+async function sendJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, init);
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<T>;
+}
+
+export function fetchPerson(employeeId: string, signal?: AbortSignal): Promise<PersonDetail> {
+  const params = new URLSearchParams({ employeeId });
+  return sendJson<PersonDetail>(`/api/person?${params.toString()}`, { signal });
+}
+
+export function createPerson(body: CreatePersonBody): Promise<{ employeeId: string }> {
+  return sendJson("/api/people", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updatePerson(employeeId: string, body: UpdatePersonBody): Promise<void> {
+  const params = new URLSearchParams({ employeeId });
+  await sendJson(`/api/person?${params.toString()}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}

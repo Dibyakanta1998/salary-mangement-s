@@ -1,14 +1,14 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { COPY } from "./copy";
 import { Home } from "./pages/Home";
+import { Person } from "./pages/Person";
 
 function Page() {
   const path = window.location.pathname;
-  if (path === "/people/new") return <p>{COPY.addPerson}</p>;
+  if (path === "/people/new") return <Person employeeId={null} />;
   if (path === "/people") {
     const id = new URLSearchParams(window.location.search).get("id") ?? "";
-    return <p>{id}</p>;
+    return <Person employeeId={id} />;
   }
   return <Home />;
 }
