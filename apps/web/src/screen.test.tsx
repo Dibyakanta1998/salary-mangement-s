@@ -49,7 +49,7 @@ test("figures request does not include status", async () => {
   window.history.replaceState(null, "", "/?status=left&country=India&department=Engineering&level=L1");
   const urls = stubFetch((url) => (url.startsWith("/api/figures") ? perCurrency : peoplePage));
   render(<Home />);
-  await screen.findByRole("heading", { name: "Pay figures" });
+  await screen.findByText("SGD");
   const figuresUrls = urls.filter((url) => url.startsWith("/api/figures"));
   expect(figuresUrls.length).toBeGreaterThan(0);
   for (const figuresUrl of figuresUrls) {
@@ -65,7 +65,7 @@ test("perCurrency payload hides median and breakdown tables", async () => {
   window.history.replaceState(null, "", "/?status=left");
   stubFetch((url) => (url.startsWith("/api/figures") ? perCurrency : peoplePage));
   const view = render(<Home />);
-  await screen.findByText(/SGD/);
+  await screen.findByText("SGD");
   expect(screen.queryByText("Median")).toBeNull();
   expect(screen.queryByRole("table", { name: "Department" })).toBeNull();
   expect(screen.queryByRole("table", { name: "Level" })).toBeNull();

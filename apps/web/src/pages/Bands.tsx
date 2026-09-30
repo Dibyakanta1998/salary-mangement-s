@@ -1,4 +1,4 @@
-import { Fragment, type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import {
   ApiError,
   deleteBand,
@@ -11,6 +11,24 @@ import {
 import { COPY } from "../copy";
 import { formatAmount } from "../formatAmount";
 import lookups from "../lookups";
+import {
+  Main,
+  Notice,
+  PageTitle,
+  Shell,
+  TableHead,
+  cardClass,
+  controlClass,
+  primaryButtonClass,
+  quietButtonClass,
+  tableClass,
+  tdClass,
+  tdRightClass,
+  thClass,
+  thRightClass,
+  trClass,
+} from "../shell";
+import { currencyFor } from "./personForm";
 
 type Cell = { country: string; level: string };
 type Load = { phase: "loading" } | { phase: "error" } | { phase: "ready"; bands: BandRow[] };
@@ -21,14 +39,12 @@ type OutsideLoad =
   | { phase: "ready"; rows: OutsideRow[] };
 type CellError = { country: string; level: string; message: string };
 
-const controlClass = "rounded border border-slate-300 px-2 py-1";
-
 function bandKey(country: string, level: string): string {
   return `${country}\t${level}`;
 }
 
-function allCells(): Cell[] {
-  return lookups.countries.flatMap((country) => lookups.levels.map((level) => ({ country: country.name, level })));
+function sameCell(left: Cell | null, right: Cell): boolean {
+  return left?.country === right.country && left.level === right.level;
 }
 
 function bandLabel(band: BandRow | undefined): string {
@@ -94,45 +110,47 @@ function useOutside(open: Cell | null, band: BandRow | undefined, attempt: numbe
 }
 
 function OutsideTable({ rows, currency }: { rows: OutsideRow[]; currency: string }) {
-  if (rows.length === 0) return <p>{COPY.outsideEmpty}</p>;
+  if (rows.length === 0) return <Notice>{COPY.outsideEmpty}</Notice>;
   return (
-    <table className="w-full border-collapse text-left text-sm">
-      <thead>
-        <tr className="border-b border-slate-200">
-          <th className="py-2 pr-3">{COPY.columnPerson}</th>
-          <th className="py-2 pr-3">{COPY.columnBase}</th>
-          <th className="py-2 pr-3">{COPY.columnMin}</th>
-          <th className="py-2 pr-3">{COPY.columnMax}</th>
-          <th className="py-2 pr-3">{COPY.columnGap}</th>
-          <th className="py-2">{COPY.columnSide}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.employeeId} className="border-b border-slate-100">
-            <td className="py-2 pr-3">
-              {row.legalName} {row.employeeId}
-            </td>
-            <td className="py-2 pr-3">{formatAmount(row.base, currency)}</td>
-            <td className="py-2 pr-3">{formatAmount(row.min, currency)}</td>
-            <td className="py-2 pr-3">{formatAmount(row.max, currency)}</td>
-            <td className="py-2 pr-3">{formatAmount(row.gap, currency)}</td>
-            <td className="py-2">{sideLabel(row.side)}</td>
+    <div className={`${cardClass} overflow-x-auto`}>
+      <table className={tableClass}>
+        <TableHead>
+          <tr>
+            <th className={thClass}>{COPY.columnPerson}</th>
+            <th className={thRightClass}>{COPY.columnBase}</th>
+            <th className={thRightClass}>{COPY.columnMin}</th>
+            <th className={thRightClass}>{COPY.columnMax}</th>
+            <th className={thRightClass}>{COPY.columnGap}</th>
+            <th className={thClass}>{COPY.columnSide}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </TableHead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.employeeId} className={trClass}>
+              <td className={tdClass}>
+                <span className="block font-mono text-xs">{row.employeeId}</span>
+                <span className="block">{row.legalName}</span>
+              </td>
+              <td className={tdRightClass}>{formatAmount(row.base, currency)}</td>
+              <td className={tdRightClass}>{formatAmount(row.min, currency)}</td>
+              <td className={tdRightClass}>{formatAmount(row.max, currency)}</td>
+              <td className={tdRightClass}>{formatAmount(row.gap, currency)}</td>
+              <td className={tdClass}>{sideLabel(row.side)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function BandActions({
+function BandEditor({
   cell,
   band,
   busy,
   error,
   onSet,
   onClear,
-  onOpen,
 }: {
   cell: Cell;
   band: BandRow | undefined;
@@ -140,7 +158,6 @@ function BandActions({
   error: string;
   onSet: (cell: Cell, minBase: string, maxBase: string) => void;
   onClear: (cell: Cell) => void;
-  onOpen: (cell: Cell) => void;
 }) {
   function onSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -149,58 +166,56 @@ function BandActions({
   }
 
   return (
-    <div className="space-y-2">
-      <form className="flex flex-wrap items-end gap-2" onSubmit={onSubmit}>
-        <label className="flex flex-col gap-1 text-sm">
+    <section className={`${cardClass} p-4`}>
+      <p className="mb-3 font-medium">
+        {cell.country} · {cell.level} · {currencyFor(cell.country)}
+      </p>
+      <form className="flex flex-wrap items-end gap-3" onSubmit={onSubmit}>
+        <label className="flex w-40 flex-col gap-1">
           <span>{COPY.minBaseLabel}</span>
           <input name="minBase" required inputMode="decimal" className={controlClass} />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex w-40 flex-col gap-1">
           <span>{COPY.maxBaseLabel}</span>
           <input name="maxBase" required inputMode="decimal" className={controlClass} />
         </label>
-        <button type="submit" disabled={busy} className="rounded bg-slate-900 px-3 py-1 text-sm text-white">
+        <button type="submit" disabled={busy} className={primaryButtonClass}>
           {busy ? COPY.saving : COPY.setBand}
         </button>
         {band ? (
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded border border-slate-300 px-3 py-1 text-sm"
-            onClick={() => onClear(cell)}
-          >
+          <button type="button" disabled={busy} className={quietButtonClass} onClick={() => onClear(cell)}>
             {COPY.clearBand}
           </button>
         ) : null}
-        {band ? (
-          <button type="button" className="text-sm text-blue-700 underline" onClick={() => onOpen(cell)}>
-            {COPY.openOutside}
-          </button>
-        ) : null}
       </form>
-      {error ? <p role="alert">{error}</p> : null}
-    </div>
+      {error ? (
+        <p className="mt-3" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
 export function Bands() {
   const [attempt, setAttempt] = useState(0);
-  const [open, setOpen] = useState<Cell | null>(null);
+  const [selected, setSelected] = useState<Cell | null>(null);
   const [busyKey, setBusyKey] = useState("");
   const [cellError, setCellError] = useState<CellError | null>(null);
   const load = useBands(attempt);
   const bands = load.phase === "ready" ? load.bands : [];
   const byKey = new Map(bands.map((band) => [bandKey(band.country, band.level), band]));
-  const openBand = open ? byKey.get(bandKey(open.country, open.level)) : undefined;
-  const outside = useOutside(openBand ? open : null, openBand, attempt);
+  const selectedBand = selected ? byKey.get(bandKey(selected.country, selected.level)) : undefined;
+  const outside = useOutside(selectedBand ? selected : null, selectedBand, attempt);
+  const editorError =
+    selected && cellError && sameCell(selected, cellError) ? cellError.message : "";
 
   async function onSet(cell: Cell, minBase: string, maxBase: string): Promise<void> {
-    const key = bandKey(cell.country, cell.level);
-    setBusyKey(key);
+    setBusyKey(bandKey(cell.country, cell.level));
     setCellError(null);
     try {
       await saveBand(cell.country, cell.level, { minBase, maxBase });
-      setOpen(cell);
+      setSelected(cell);
       setAttempt((value) => value + 1);
     } catch (error: unknown) {
       setCellError({ ...cell, message: messageFrom(error, COPY.bandSaveError) });
@@ -210,14 +225,10 @@ export function Bands() {
   }
 
   async function onClear(cell: Cell): Promise<void> {
-    const key = bandKey(cell.country, cell.level);
-    setBusyKey(key);
+    setBusyKey(bandKey(cell.country, cell.level));
     setCellError(null);
     try {
       await deleteBand(cell.country, cell.level);
-      setOpen((current) =>
-        current && current.country === cell.country && current.level === cell.level ? null : current,
-      );
       setAttempt((value) => value + 1);
     } catch (error: unknown) {
       setCellError({ ...cell, message: messageFrom(error, COPY.bandClearError) });
@@ -227,86 +238,88 @@ export function Bands() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between px-4 py-3">
-        <a className="text-blue-700 underline" href="/">
-          {COPY.title}
-        </a>
-        <h1 className="text-xl font-semibold">{COPY.bandsTitle}</h1>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-4">
-        {load.phase === "loading" ? <p>{COPY.bandsLoading}</p> : null}
+    <Shell>
+      <Main>
+        <PageTitle>{COPY.bandsTitle}</PageTitle>
+        {load.phase === "loading" ? <Notice>{COPY.bandsLoading}</Notice> : null}
         {load.phase === "error" ? (
-          <p>
+          <Notice>
             {COPY.bandsLoadError}{" "}
-            <button type="button" className="text-blue-700 underline" onClick={() => setAttempt((value) => value + 1)}>
+            <button type="button" className={quietButtonClass} onClick={() => setAttempt((value) => value + 1)}>
               {COPY.retry}
             </button>
-          </p>
+          </Notice>
         ) : null}
         {load.phase === "ready" ? (
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="py-2 pr-3">{COPY.countryLabel}</th>
-                <th className="py-2 pr-3">{COPY.levelLabel}</th>
-                <th className="py-2 pr-3">{COPY.bandsTitle}</th>
-                <th className="py-2">{COPY.setBand}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allCells().map((cell) => {
-                const band = byKey.get(bandKey(cell.country, cell.level));
-                const openHere = openBand?.country === cell.country && openBand.level === cell.level;
-                const error =
-                  cellError?.country === cell.country && cellError.level === cell.level ? cellError.message : "";
-                return (
-                  <Fragment key={bandKey(cell.country, cell.level)}>
-                    <tr className="border-b border-slate-100 align-top">
-                      <td className="py-2 pr-3">{cell.country}</td>
-                      <td className="py-2 pr-3">{cell.level}</td>
-                      <td className="py-2 pr-3">{bandLabel(band)}</td>
-                      <td className="py-2">
-                        <BandActions
-                          cell={cell}
-                          band={band}
-                          busy={busyKey === bandKey(cell.country, cell.level)}
-                          error={error}
-                          onSet={(next, minBase, maxBase) => void onSet(next, minBase, maxBase)}
-                          onClear={(next) => void onClear(next)}
-                          onOpen={setOpen}
-                        />
-                      </td>
+          <div className="space-y-4">
+            <div className={`${cardClass} overflow-x-auto`}>
+              <table className={tableClass}>
+                <TableHead>
+                  <tr>
+                    <th className={thClass}>{COPY.countryLabel}</th>
+                    {lookups.levels.map((level) => (
+                      <th key={level} className={thClass}>
+                        {level}
+                      </th>
+                    ))}
+                  </tr>
+                </TableHead>
+                <tbody>
+                  {lookups.countries.map((country) => (
+                    <tr key={country.name} className={trClass}>
+                      <th scope="row" className={`${tdClass} text-left font-medium`}>
+                        {country.name}
+                      </th>
+                      {lookups.levels.map((level) => {
+                        const cell = { country: country.name, level };
+                        const band = byKey.get(bandKey(cell.country, cell.level));
+                        const active = sameCell(selected, cell);
+                        return (
+                          <td key={level} className="p-1">
+                            <button
+                              type="button"
+                              aria-pressed={active}
+                              className={`w-full rounded-md px-2 py-2 text-left text-xs ${
+                                active ? "ring-2 ring-sky-600" : "hover:bg-slate-50"
+                              } ${band ? "" : "text-slate-500"}`}
+                              onClick={() => setSelected(cell)}
+                            >
+                              {bandLabel(band)}
+                            </button>
+                          </td>
+                        );
+                      })}
                     </tr>
-                    {openHere ? (
-                      <tr className="border-b border-slate-100">
-                        <td className="py-2" colSpan={4}>
-                          {outside.phase === "loading" ? <p>{COPY.outsideLoading}</p> : null}
-                          {outside.phase === "error" ? (
-                            <p>
-                              {COPY.outsideLoadError}{" "}
-                              <button
-                                type="button"
-                                className="text-blue-700 underline"
-                                onClick={() => setAttempt((value) => value + 1)}
-                              >
-                                {COPY.retry}
-                              </button>
-                            </p>
-                          ) : null}
-                          {outside.phase === "ready" && band ? (
-                            <OutsideTable rows={outside.rows} currency={band.currency} />
-                          ) : null}
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {selected ? (
+              <BandEditor
+                key={bandKey(selected.country, selected.level)}
+                cell={selected}
+                band={selectedBand}
+                busy={busyKey === bandKey(selected.country, selected.level)}
+                error={editorError}
+                onSet={(cell, minBase, maxBase) => void onSet(cell, minBase, maxBase)}
+                onClear={(cell) => void onClear(cell)}
+              />
+            ) : null}
+            {selectedBand && outside.phase === "loading" ? <Notice>{COPY.outsideLoading}</Notice> : null}
+            {selectedBand && outside.phase === "error" ? (
+              <Notice>
+                {COPY.outsideLoadError}{" "}
+                <button type="button" className={quietButtonClass} onClick={() => setAttempt((value) => value + 1)}>
+                  {COPY.retry}
+                </button>
+              </Notice>
+            ) : null}
+            {selectedBand && outside.phase === "ready" ? (
+              <OutsideTable rows={outside.rows} currency={selectedBand.currency} />
+            ) : null}
+          </div>
         ) : null}
-      </main>
-    </div>
+      </Main>
+    </Shell>
   );
 }

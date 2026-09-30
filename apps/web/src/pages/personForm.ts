@@ -102,14 +102,20 @@ function statusName(status: string): string {
   return status;
 }
 
-export function historyLine(row: HistoryRow): string {
+function historyAmounts(row: HistoryRow): string {
   const oldCountry = row.oldCountry ?? row.newCountry;
   const oldAmount = formatAmount(row.oldBase, currencyFor(oldCountry));
   const newAmount = formatAmount(row.newBase, currencyFor(row.newCountry));
-  const amounts = row.oldCountry
-    ? `${oldAmount} ${row.oldCountry} → ${newAmount} ${row.newCountry}`
-    : `${oldAmount} → ${newAmount}`;
-  const when = row.changedAt.slice(0, 10);
-  if (row.oldStatus === row.newStatus) return `${when} ${amounts} ${row.note}`;
-  return `${when} ${amounts} ${statusName(row.oldStatus)} → ${statusName(row.newStatus)} ${row.note}`;
+  if (!row.oldCountry) return `${oldAmount} → ${newAmount}`;
+  return `${oldAmount} ${row.oldCountry} → ${newAmount} ${row.newCountry}`;
+}
+
+export function historyChange(row: HistoryRow): string {
+  const amounts = historyAmounts(row);
+  if (row.oldStatus === row.newStatus) return amounts;
+  return `${amounts} ${statusName(row.oldStatus)} → ${statusName(row.newStatus)}`;
+}
+
+export function historyLine(row: HistoryRow): string {
+  return `${row.changedAt.slice(0, 10)} ${historyChange(row)} ${row.note}`;
 }

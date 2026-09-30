@@ -2,6 +2,21 @@ import { useEffect, useState } from "react";
 import { fetchChanges, type ChangeRow } from "../api/client";
 import { COPY } from "../copy";
 import { formatAmount } from "../formatAmount";
+import {
+  Main,
+  Notice,
+  PageTitle,
+  Shell,
+  TableHead,
+  cardClass,
+  quietButtonClass,
+  tableClass,
+  tdClass,
+  tdRightClass,
+  thClass,
+  thRightClass,
+  trClass,
+} from "../shell";
 import { currencyFor } from "./personForm";
 
 type Load = { phase: "loading" } | { phase: "error" } | { phase: "ready"; rows: ChangeRow[] };
@@ -15,34 +30,37 @@ function oldCurrency(row: ChangeRow): string {
 }
 
 function ChangesTable({ rows }: { rows: ChangeRow[] }) {
-  if (rows.length === 0) return <p>{COPY.changesEmpty}</p>;
+  if (rows.length === 0) return <Notice>{COPY.changesEmpty}</Notice>;
   return (
-    <table className="w-full border-collapse text-left text-sm">
-      <thead>
-        <tr className="border-b border-slate-200">
-          <th className="py-2 pr-3">{COPY.columnPerson}</th>
-          <th className="py-2 pr-3">{COPY.columnOldBase}</th>
-          <th className="py-2 pr-3">{COPY.columnNewBase}</th>
-          <th className="py-2 pr-3">{COPY.columnOldCountry}</th>
-          <th className="py-2 pr-3">{COPY.columnDate}</th>
-          <th className="py-2">{COPY.columnNote}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={`${row.employeeId}-${row.changedAt}`} className="border-b border-slate-100">
-            <td className="py-2 pr-3">
-              {row.legalName} {row.employeeId}
-            </td>
-            <td className="py-2 pr-3">{formatAmount(row.oldBase, oldCurrency(row))}</td>
-            <td className="py-2 pr-3">{formatAmount(row.newBase, currencyFor(row.newCountry))}</td>
-            <td className="py-2 pr-3">{row.oldCountry ?? ""}</td>
-            <td className="py-2 pr-3">{changeDate(row.changedAt)}</td>
-            <td className="py-2">{row.note}</td>
+    <div className={`${cardClass} overflow-x-auto`}>
+      <table className={tableClass}>
+        <TableHead>
+          <tr>
+            <th className={thClass}>{COPY.columnPerson}</th>
+            <th className={thRightClass}>{COPY.columnOldBase}</th>
+            <th className={thRightClass}>{COPY.columnNewBase}</th>
+            <th className={thClass}>{COPY.columnOldCountry}</th>
+            <th className={thClass}>{COPY.columnDate}</th>
+            <th className={thClass}>{COPY.columnNote}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </TableHead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.employeeId}-${row.changedAt}`} className={trClass}>
+              <td className={tdClass}>
+                <span className="block font-mono text-xs">{row.employeeId}</span>
+                <span className="block">{row.legalName}</span>
+              </td>
+              <td className={tdRightClass}>{formatAmount(row.oldBase, oldCurrency(row))}</td>
+              <td className={tdRightClass}>{formatAmount(row.newBase, currencyFor(row.newCountry))}</td>
+              <td className={tdClass}>{row.oldCountry ?? ""}</td>
+              <td className={tdClass}>{changeDate(row.changedAt)}</td>
+              <td className={tdClass}>{row.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -71,25 +89,20 @@ export function Changes() {
   const { load, retry } = useChanges();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between px-4 py-3">
-        <a className="text-blue-700 underline" href="/">
-          {COPY.title}
-        </a>
-        <h1 className="text-xl font-semibold">{COPY.changesTitle}</h1>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-4">
-        {load.phase === "loading" ? <p>{COPY.changesLoading}</p> : null}
+    <Shell>
+      <Main>
+        <PageTitle>{COPY.changesTitle}</PageTitle>
+        {load.phase === "loading" ? <Notice>{COPY.changesLoading}</Notice> : null}
         {load.phase === "error" ? (
-          <p>
+          <Notice>
             {COPY.changesLoadError}{" "}
-            <button type="button" className="text-blue-700 underline" onClick={retry}>
+            <button type="button" className={quietButtonClass} onClick={retry}>
               {COPY.retry}
             </button>
-          </p>
+          </Notice>
         ) : null}
         {load.phase === "ready" ? <ChangesTable rows={load.rows} /> : null}
-      </main>
-    </div>
+      </Main>
+    </Shell>
   );
 }

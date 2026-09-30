@@ -1,16 +1,34 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import {
+  PAGE_SIZE,
   fetchFigures,
   fetchPeople,
   filtersFromSearch,
   homeHref,
   type Figures,
   type ListFilters,
+  type MoneyGroup,
   type PeoplePage,
 } from "../api/client";
 import { COPY } from "../copy";
 import { formatAmount } from "../formatAmount";
 import lookups from "../lookups";
+import {
+  Main,
+  Notice,
+  PageTitle,
+  Shell,
+  TableHead,
+  cardClass,
+  controlClass,
+  quietButtonClass,
+  tableClass,
+  tdClass,
+  tdRightClass,
+  thClass,
+  thRightClass,
+  trClass,
+} from "../shell";
 
 type Load =
   | { phase: "loading" }
@@ -48,53 +66,56 @@ function onFilterSubmit(event: FormEvent<HTMLFormElement>): void {
 function FilterBar({ filters }: { filters: ListFilters }) {
   return (
     <form
-      className="sticky top-0 z-10 flex flex-wrap items-end gap-3 border-b border-slate-200 bg-white px-4 py-3"
+      className="sticky top-14 z-10 border-b border-slate-200 bg-slate-100"
       onChange={onFilterChange}
       onSubmit={onFilterSubmit}
     >
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{COPY.searchLabel}</span>
-        <input
-          name="q"
-          defaultValue={filters.q}
-          className="rounded border border-slate-300 px-2 py-1"
-        />
-      </label>
-      <SelectFilter name="country" label={COPY.countryLabel} value={filters.country}>
-        {lookups.countries.map((country) => (
-          <option key={country.name} value={country.name}>
-            {country.name}
-          </option>
-        ))}
-      </SelectFilter>
-      <SelectFilter name="department" label={COPY.departmentLabel} value={filters.department}>
-        {lookups.departments.map((department) => (
-          <option key={department} value={department}>
-            {department}
-          </option>
-        ))}
-      </SelectFilter>
-      <SelectFilter name="level" label={COPY.levelLabel} value={filters.level}>
-        {lookups.levels.map((level) => (
-          <option key={level} value={level}>
-            {level}
-          </option>
-        ))}
-      </SelectFilter>
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{COPY.statusLabel}</span>
-        <select
-          name="status"
-          defaultValue={filters.status}
-          className="rounded border border-slate-300 px-2 py-1"
-        >
-          <option value="active">{COPY.statusActive}</option>
-          <option value="left">{COPY.statusLeft}</option>
-        </select>
-      </label>
-      <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-sm text-white">
-        {COPY.searchLabel}
-      </button>
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-3 px-4 py-3 sm:grid-cols-2 sm:px-6 lg:grid-cols-5">
+        <label className="flex min-w-0 flex-col gap-1">
+          <span>{COPY.searchLabel}</span>
+          <input
+            name="q"
+            defaultValue={filters.q}
+            className={controlClass}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              const form = event.currentTarget.form;
+              if (form) go(homeHref(readForm(form)));
+            }}
+          />
+        </label>
+        <SelectFilter name="country" label={COPY.countryLabel} value={filters.country}>
+          {lookups.countries.map((country) => (
+            <option key={country.name} value={country.name}>
+              {country.name}
+            </option>
+          ))}
+        </SelectFilter>
+        <SelectFilter name="department" label={COPY.departmentLabel} value={filters.department}>
+          {lookups.departments.map((department) => (
+            <option key={department} value={department}>
+              {department}
+            </option>
+          ))}
+        </SelectFilter>
+        <SelectFilter name="level" label={COPY.levelLabel} value={filters.level}>
+          {lookups.levels.map((level) => (
+            <option key={level} value={level}>
+              {level}
+            </option>
+          ))}
+        </SelectFilter>
+        <label className="flex min-w-0 flex-col gap-1">
+          <span>
+            {COPY.statusLabel} <span className="text-slate-400">{COPY.statusListNote}</span>
+          </span>
+          <select name="status" defaultValue={filters.status} className={controlClass}>
+            <option value="active">{COPY.statusActive}</option>
+            <option value="left">{COPY.statusLeft}</option>
+          </select>
+        </label>
+      </div>
     </form>
   );
 }
@@ -111,9 +132,9 @@ function SelectFilter({
   children: ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <label className="flex min-w-0 flex-col gap-1">
       <span>{label}</span>
-      <select name={name} defaultValue={value} className="rounded border border-slate-300 px-2 py-1">
+      <select name={name} defaultValue={value} className={controlClass}>
         <option value="">{COPY.any}</option>
         {children}
       </select>
@@ -121,133 +142,139 @@ function SelectFilter({
   );
 }
 
-function amountOrBlank(amount: string | null, currency: string): string {
-  if (!amount) return "";
+function moneyOrDash(amount: string | null, currency: string): string {
+  if (!amount) return COPY.emDash;
   return formatAmount(amount, currency);
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <article className={`${cardClass} px-4 py-3`}>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
+    </article>
+  );
 }
 
 function PerCurrency({ lines }: { lines: Extract<Figures, { kind: "perCurrency" }>["lines"] }) {
   return (
-    <ul className="space-y-1">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {lines.map((line) => (
-        <li key={line.currency}>
-          {line.currency} {COPY.headcount} {line.headcount} {COPY.totalPay}{" "}
-          {formatAmount(line.totalAnnualBase, line.currency)}
-        </li>
+        <article key={line.currency} className={`${cardClass} px-4 py-3`}>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{line.currency}</p>
+          <p className="mt-2">
+            {COPY.headcount} <span className="font-semibold tabular-nums">{line.headcount}</span>
+          </p>
+          <p>
+            {COPY.totalPay}{" "}
+            <span className="font-semibold tabular-nums">{formatAmount(line.totalAnnualBase, line.currency)}</span>
+          </p>
+        </article>
       ))}
-    </ul>
+    </div>
   );
 }
 
 function GroupTable({
   caption,
-  labelKey,
   rows,
   currency,
 }: {
   caption: string;
-  labelKey: "department" | "level";
-  rows: ({ headcount: number; medianAnnualBase: string | null; totalAnnualBase: string } & {
-    department?: string | null;
-    level?: string;
-  })[];
+  rows: (MoneyGroup & { label: string })[];
   currency: string;
 }) {
   return (
-    <table className="mt-4 w-full border-collapse text-left text-sm">
-      <caption className="mb-2 text-left font-medium">{caption}</caption>
-      <thead>
-        <tr className="border-b border-slate-200">
-          <th className="py-1 pr-3">{caption}</th>
-          <th className="py-1 pr-3">{COPY.headcount}</th>
-          <th className="py-1 pr-3">{COPY.median}</th>
-          <th className="py-1">{COPY.totalPay}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => {
-          const label =
-            labelKey === "department" ? (row.department ?? COPY.noDepartment) : (row.level ?? "");
-          return (
-            <tr key={label} className="border-b border-slate-100">
-              <td className="py-1 pr-3">{label}</td>
-              <td className="py-1 pr-3">{row.headcount}</td>
-              <td className="py-1 pr-3">{amountOrBlank(row.medianAnnualBase, currency)}</td>
-              <td className="py-1">{formatAmount(row.totalAnnualBase, currency)}</td>
+    <section className={cardClass}>
+      <h2 className="border-b border-slate-200 px-3 py-2 text-sm font-medium">{caption}</h2>
+      <div className="overflow-x-auto">
+        <table className={tableClass}>
+          <TableHead>
+            <tr>
+              <th className={thClass}>{caption}</th>
+              <th className={thRightClass}>{COPY.headcount}</th>
+              <th className={thRightClass}>{COPY.median}</th>
+              <th className={thRightClass}>{COPY.totalPay}</th>
             </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
-
-function CountryFigures({ figures }: { figures: Extract<Figures, { kind: "country" }> }) {
-  return (
-    <div>
-      <p>
-        {COPY.headcount} {figures.headcount}
-      </p>
-      <p>
-        {COPY.median} {amountOrBlank(figures.medianAnnualBase, figures.currency)}
-      </p>
-      <p>
-        {COPY.totalPay} {formatAmount(figures.totalAnnualBase, figures.currency)}
-      </p>
-      <GroupTable
-        caption={COPY.departmentLabel}
-        labelKey="department"
-        rows={figures.byDepartment}
-        currency={figures.currency}
-      />
-      <GroupTable
-        caption={COPY.levelLabel}
-        labelKey="level"
-        rows={figures.byLevel}
-        currency={figures.currency}
-      />
-    </div>
-  );
-}
-
-function FiguresPanel({ figures }: { figures: Figures }) {
-  return (
-    <section className="px-4 py-4">
-      <h2 className="mb-2 text-lg font-medium">{COPY.figuresTitle}</h2>
-      {figures.kind === "perCurrency" ? (
-        <PerCurrency lines={figures.lines} />
-      ) : (
-        <CountryFigures figures={figures} />
-      )}
+          </TableHead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className={trClass}>
+                <td className={tdClass}>{row.label}</td>
+                <td className={tdRightClass}>{row.headcount}</td>
+                <td className={tdRightClass}>{moneyOrDash(row.medianAnnualBase, currency)}</td>
+                <td className={tdRightClass}>{formatAmount(row.totalAnnualBase, currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-function Pager({ filters, page, total }: { filters: ListFilters; page: number; total: number }) {
-  const pageSize = 50;
+function CountryFigures({
+  figures,
+  filters,
+  people,
+}: {
+  figures: Extract<Figures, { kind: "country" }>;
+  filters: ListFilters;
+  people: PeoplePage;
+}) {
+  const departments = figures.byDepartment.map((row) => ({
+    ...row,
+    label: row.department ?? COPY.noDepartment,
+  }));
+  const levels = figures.byLevel.map((row) => ({ ...row, label: row.level }));
   return (
-    <p className="flex flex-wrap items-center gap-3 text-sm">
-      <span>
-        {COPY.pageLabel} {page}
-      </span>
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard label={COPY.headcount} value={String(figures.headcount)} />
+        <StatCard label={COPY.median} value={moneyOrDash(figures.medianAnnualBase, figures.currency)} />
+        <StatCard label={COPY.totalPay} value={formatAmount(figures.totalAnnualBase, figures.currency)} />
+      </div>
+      <div className="grid items-start gap-4 xl:grid-cols-[26rem_minmax(0,1fr)]">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <GroupTable caption={COPY.departmentLabel} rows={departments} currency={figures.currency} />
+          <GroupTable caption={COPY.levelLabel} rows={levels} currency={figures.currency} />
+        </div>
+        <PeopleCard filters={filters} people={people} />
+      </div>
+    </div>
+  );
+}
+
+function Pager({ filters, page, total }: { filters: ListFilters; page: number; total: number }) {
+  const previousHref = page > 1 ? homeHref({ ...filters, page: page - 1 }) : "";
+  const nextHref = page * PAGE_SIZE < total ? homeHref({ ...filters, page: page + 1 }) : "";
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-3 py-3">
       <span>
         {COPY.totalLabel} {total}
       </span>
-      {page > 1 ? (
-        <a className="text-blue-700 underline" href={homeHref({ ...filters, page: page - 1 })}>
+      <span>
+        {COPY.pageLabel} {page}
+      </span>
+      {previousHref ? (
+        <a className={quietButtonClass} href={previousHref}>
           {COPY.previous}
         </a>
       ) : (
-        <span>{COPY.previous}</span>
+        <button type="button" className={quietButtonClass} disabled>
+          {COPY.previous}
+        </button>
       )}
-      {page * pageSize < total ? (
-        <a className="text-blue-700 underline" href={homeHref({ ...filters, page: page + 1 })}>
+      {nextHref ? (
+        <a className={quietButtonClass} href={nextHref}>
           {COPY.next}
         </a>
       ) : (
-        <span>{COPY.next}</span>
+        <button type="button" className={quietButtonClass} disabled>
+          {COPY.next}
+        </button>
       )}
-    </p>
+    </div>
   );
 }
 
@@ -257,40 +284,61 @@ function statusLabel(status: string): string {
   return status;
 }
 
-function PeopleTable({ people }: { people: PeoplePage }) {
-  if (people.people.length === 0) return <p>{COPY.empty}</p>;
+function StatusPill({ status }: { status: string }) {
+  const tone = status === "left" ? "bg-slate-200 text-slate-700" : "bg-slate-900 text-white";
   return (
-    <table className="w-full border-collapse text-left text-sm">
-      <thead>
-        <tr className="border-b border-slate-200">
-          <th className="py-2 pr-3">{COPY.columnEmployee}</th>
-          <th className="py-2 pr-3">{COPY.columnCountry}</th>
-          <th className="py-2 pr-3">{COPY.columnLevel}</th>
-          <th className="py-2 pr-3">{COPY.columnDepartment}</th>
-          <th className="py-2 pr-3">{COPY.columnBase}</th>
-          <th className="py-2">{COPY.columnStatus}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {people.people.map((person) => (
-          <tr key={person.employeeId} className="border-b border-slate-100">
-            <td className="py-2 pr-3">
-              <a
-                className="text-blue-700 underline"
-                href={`/people?id=${encodeURIComponent(person.employeeId)}`}
-              >
-                {person.employeeId} {person.legalName}
-              </a>
-            </td>
-            <td className="py-2 pr-3">{person.country}</td>
-            <td className="py-2 pr-3">{person.level}</td>
-            <td className="py-2 pr-3">{person.department ?? COPY.noDepartment}</td>
-            <td className="py-2 pr-3">{formatAmount(person.annualBase, person.currency)}</td>
-            <td className="py-2">{statusLabel(person.status)}</td>
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>{statusLabel(status)}</span>
+  );
+}
+
+function PeopleTable({ people }: { people: PeoplePage }) {
+  if (people.people.length === 0) return <p className="px-3 py-4">{COPY.empty}</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className={tableClass}>
+        <TableHead>
+          <tr>
+            <th className={thClass}>{COPY.columnEmployee}</th>
+            <th className={thClass}>{COPY.columnCountry}</th>
+            <th className={thClass}>{COPY.columnLevel}</th>
+            <th className={thClass}>{COPY.columnDepartment}</th>
+            <th className={thRightClass}>{COPY.columnBase}</th>
+            <th className={thClass}>{COPY.columnStatus}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </TableHead>
+        <tbody>
+          {people.people.map((person) => (
+            <tr key={person.employeeId} className={trClass}>
+              <td className={tdClass}>
+                <a
+                  className="block text-slate-900 no-underline"
+                  href={`/people?id=${encodeURIComponent(person.employeeId)}`}
+                >
+                  <span className="block font-mono text-xs">{person.employeeId}</span>
+                  <span className="block">{person.legalName}</span>
+                </a>
+              </td>
+              <td className={tdClass}>{person.country}</td>
+              <td className={tdClass}>{person.level}</td>
+              <td className={tdClass}>{person.department ?? COPY.noDepartment}</td>
+              <td className={tdRightClass}>{formatAmount(person.annualBase, person.currency)}</td>
+              <td className={tdClass}>
+                <StatusPill status={person.status} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PeopleCard({ filters, people }: { filters: ListFilters; people: PeoplePage }) {
+  return (
+    <section className={cardClass}>
+      <Pager filters={filters} page={people.page} total={people.total} />
+      <PeopleTable people={people} />
+    </section>
   );
 }
 
@@ -325,42 +373,29 @@ export function Home() {
   const { load, retry } = useHomeData(filters);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-xl font-semibold">{COPY.title}</h1>
-        <nav className="flex gap-4 text-sm">
-          <a className="text-blue-700 underline" href="/changes">
-            {COPY.changesTitle}
-          </a>
-          <a className="text-blue-700 underline" href="/bands">
-            {COPY.bandsNav}
-          </a>
-          <a className="text-blue-700 underline" href="/people/new">
-            {COPY.add}
-          </a>
-        </nav>
-      </header>
+    <Shell>
       <FilterBar filters={filters} />
-      <main className="mx-auto max-w-6xl">
-        {load.phase === "loading" ? <p className="px-4 py-4">{COPY.loading}</p> : null}
+      <Main>
+        <PageTitle>{COPY.title}</PageTitle>
+        {load.phase === "loading" ? <Notice>{COPY.loading}</Notice> : null}
         {load.phase === "error" ? (
-          <p className="px-4 py-4">
+          <Notice>
             {COPY.loadError}{" "}
-            <button type="button" className="text-blue-700 underline" onClick={retry}>
+            <button type="button" className={quietButtonClass} onClick={retry}>
               {COPY.retry}
             </button>
-          </p>
+          </Notice>
         ) : null}
-        {load.phase === "ready" ? (
-          <>
-            <FiguresPanel figures={load.figures} />
-            <section className="space-y-3 px-4 pb-8">
-              <Pager filters={filters} page={load.people.page} total={load.people.total} />
-              <PeopleTable people={load.people} />
-            </section>
-          </>
+        {load.phase === "ready" && load.figures.kind === "perCurrency" ? (
+          <div className="space-y-4">
+            <PerCurrency lines={load.figures.lines} />
+            <PeopleCard filters={filters} people={load.people} />
+          </div>
         ) : null}
-      </main>
-    </div>
+        {load.phase === "ready" && load.figures.kind === "country" ? (
+          <CountryFigures figures={load.figures} filters={filters} people={load.people} />
+        ) : null}
+      </Main>
+    </Shell>
   );
 }

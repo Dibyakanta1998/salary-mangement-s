@@ -11,21 +11,38 @@ import { COPY } from "../copy";
 import { formatAmount } from "../formatAmount";
 import lookups from "../lookups";
 import {
+  Main,
+  Notice,
+  PageTitle,
+  Shell,
+  TableHead,
+  cardClass,
+  controlClass,
+  primaryButtonClass,
+  quietButtonClass,
+  readOnlyClass,
+  tableClass,
+  tdClass,
+  thClass,
+  trClass,
+} from "../shell";
+import {
   asStatus,
   currencyFor,
   emptyForm,
   formFromPerson,
-  historyLine,
+  historyChange,
   personFields,
   saveNeedsNote,
   type FormState,
 } from "./personForm";
 
-const controlClass = "rounded border border-slate-300 px-2 py-1";
+const areaClass =
+  "min-h-24 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30";
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <label className={`flex flex-col gap-1 ${wide ? "sm:col-span-2" : ""}`}>
       <span>{label}</span>
       {children}
     </label>
@@ -34,9 +51,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
-    <p className="flex flex-col gap-1 text-sm">
+    <p className="flex flex-col gap-1">
       <span>{label}</span>
-      <span className="rounded border border-slate-200 bg-slate-100 px-2 py-1">{value}</span>
+      <span className={readOnlyClass}>{value}</span>
     </p>
   );
 }
@@ -58,7 +75,7 @@ function PersonForm({
 }) {
   const needsNote = saveNeedsNote(form, person);
   return (
-    <form className="space-y-3" onSubmit={onSubmit}>
+    <form className="grid gap-3 sm:grid-cols-2" onSubmit={onSubmit}>
       {person ? (
         <ReadOnlyField label={COPY.employeeIdLabel} value={person.employeeId} />
       ) : (
@@ -139,7 +156,7 @@ function PersonForm({
         />
       </Field>
       {person ? (
-        <p className="text-sm">
+        <p className={readOnlyClass}>
           {COPY.monthlyLabel} {formatAmount(person.monthlyBase, person.currency)}
         </p>
       ) : null}
@@ -185,38 +202,59 @@ function PersonForm({
         />
       </Field>
       {needsNote ? (
-        <Field label={COPY.noteLabel}>
+        <Field label={COPY.noteLabel} wide>
           <textarea
             name="note"
             required
             maxLength={1000}
             value={form.note}
-            className={controlClass}
+            className={areaClass}
             onChange={(event) => onChange({ note: event.target.value })}
           />
           <span>{COPY.noteHint}</span>
         </Field>
       ) : null}
-      {saveError ? <p role="alert">{saveError}</p> : null}
-      <button type="submit" disabled={saving} className="rounded bg-slate-900 px-3 py-1 text-sm text-white">
-        {saving ? COPY.saving : COPY.save}
-      </button>
+      {saveError ? (
+        <p className="sm:col-span-2" role="alert">
+          {saveError}
+        </p>
+      ) : null}
+      <div className="sm:col-span-2">
+        <button type="submit" disabled={saving} className={primaryButtonClass}>
+          {saving ? COPY.saving : COPY.save}
+        </button>
+      </div>
     </form>
   );
 }
 
-function Changes({ history }: { history: HistoryRow[] }) {
+function HistoryTable({ history }: { history: HistoryRow[] }) {
   const rows = history.slice(0, 10);
   return (
-    <section className="mt-8">
-      <h2 className="mb-2 text-lg font-medium">{COPY.changesTitle}</h2>
-      {rows.length === 0 ? <p>{COPY.noChanges}</p> : null}
+    <section className="mt-6">
+      <h2 className="mb-3 text-lg font-semibold">{COPY.changesTitle}</h2>
+      {rows.length === 0 ? <Notice>{COPY.noChanges}</Notice> : null}
       {rows.length > 0 ? (
-        <ul className="space-y-2 text-sm">
-          {rows.map((row, index) => (
-            <li key={`${row.changedAt}-${index}`}>{historyLine(row)}</li>
-          ))}
-        </ul>
+        <div className={`${cardClass} overflow-x-auto`}>
+          <table className={tableClass}>
+            <TableHead>
+              <tr>
+                <th className={thClass}>{COPY.columnDate}</th>
+                <th className={thClass}>{COPY.columnWhatChanged}</th>
+                <th className={thClass}>{COPY.columnNote}</th>
+              </tr>
+            </TableHead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={`${row.changedAt}-${index}`} className={trClass}>
+                  <td className={tdClass}>{row.changedAt.slice(0, 10)}</td>
+                  <td className={tdClass}>{historyChange(row)}</td>
+                  <td className={tdClass}>{row.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </section>
   );
@@ -292,37 +330,36 @@ export function Person({ employeeId }: { employeeId: string | null }) {
   const title = person?.legalName || (employeeId === null ? COPY.addPerson : COPY.employeeIdLabel);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between px-4 py-3">
-        <a className="text-blue-700 underline" href="/">
-          {COPY.title}
-        </a>
-        <h1 className="text-xl font-semibold">{title}</h1>
-      </header>
-      <main className="mx-auto max-w-xl px-4 py-4">
-        {phase === "loading" ? <p>{COPY.personLoading}</p> : null}
-        {phase === "error" ? (
-          <p>
-            {COPY.personLoadError}{" "}
-            <button type="button" className="text-blue-700 underline" onClick={() => setReloadKey((value) => value + 1)}>
-              {COPY.retry}
-            </button>
-          </p>
-        ) : null}
-        {phase === "ready" ? (
-          <>
-            <PersonForm
-              person={person}
-              form={form}
-              saving={saving}
-              saveError={saveError}
-              onChange={onChange}
-              onSubmit={(event) => void onSubmit(event)}
-            />
-            {person ? <Changes history={person.history} /> : null}
-          </>
-        ) : null}
-      </main>
-    </div>
+    <Shell>
+      <Main>
+        <PageTitle>{title}</PageTitle>
+        <div className="max-w-3xl">
+          {phase === "loading" ? <Notice>{COPY.personLoading}</Notice> : null}
+          {phase === "error" ? (
+            <Notice>
+              {COPY.personLoadError}{" "}
+              <button type="button" className={quietButtonClass} onClick={() => setReloadKey((value) => value + 1)}>
+                {COPY.retry}
+              </button>
+            </Notice>
+          ) : null}
+          {phase === "ready" ? (
+            <>
+              <div className={`${cardClass} p-4`}>
+                <PersonForm
+                  person={person}
+                  form={form}
+                  saving={saving}
+                  saveError={saveError}
+                  onChange={onChange}
+                  onSubmit={(event) => void onSubmit(event)}
+                />
+              </div>
+              {person ? <HistoryTable history={person.history} /> : null}
+            </>
+          ) : null}
+        </div>
+      </Main>
+    </Shell>
   );
 }
