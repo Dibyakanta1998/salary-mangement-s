@@ -3,9 +3,9 @@ import path from "node:path";
 import { after, before, describe, test } from "node:test";
 import type { Transaction } from "sequelize";
 import { QueryTypes } from "sequelize";
-import { migrate, waitForPostgres } from "./db/migrate";
-import { sequelize } from "./db/sequelize";
-import { withApp } from "./test-harness";
+import { migrate, waitForPostgres } from "./db/migrate.js";
+import { sequelize } from "./db/sequelize.js";
+import { withApp } from "./test-harness.js";
 
 type HistoryRow = {
   changedAt: string;

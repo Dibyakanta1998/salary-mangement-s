@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
-import { bandBodySchema, bandParamsSchema, outsideQuerySchema } from "./bands.schema";
-import { clearBand, listBands, listOutside, saveBand } from "./bands.service";
+import { bandBodySchema, bandParamsSchema, outsideQuerySchema } from "./bands.schema.js";
+import { clearBand, listBands, listOutside, saveBand } from "./bands.service.js";
 
 function asyncRoute(handler: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {

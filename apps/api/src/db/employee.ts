@@ -1,5 +1,5 @@
 import { DataTypes, Model } from "sequelize";
-import { sequelize } from "./sequelize";
+import { sequelize } from "./sequelize.js";
 
 export class Employee extends Model {
   declare employeeId: string;

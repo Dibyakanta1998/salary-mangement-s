@@ -1,6 +1,6 @@
 import type { QueryInterface, Transaction } from "sequelize";
 import { QueryTypes } from "sequelize";
-import { buildSeedPeople, seedHistory, type SeedEmployee, type SeedHistory } from "../seedPeople";
+import { buildSeedPeople, seedHistory, type SeedEmployee, type SeedHistory } from "../seedPeople.js";
 
 const CHUNK = 1000;
 

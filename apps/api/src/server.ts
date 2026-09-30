@@ -1,6 +1,6 @@
 import path from "node:path";
-import { createApp } from "./app";
-import { migrate, seed, waitForPostgres } from "./db/migrate";
+import { createApp } from "./app.js";
+import { migrate, seed, waitForPostgres } from "./db/migrate.js";
 
 async function main(): Promise<void> {
   const apiRoot = path.resolve(__dirname, "..");

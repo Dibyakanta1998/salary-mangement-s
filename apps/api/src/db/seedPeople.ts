@@ -1,4 +1,4 @@
-import lookups from "../lookups";
+import lookups from "../lookups.js";
 
 const GENERATOR_SEED = 20260930;
 const PEOPLE = 10_000;

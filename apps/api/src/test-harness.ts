@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { Transaction } from "sequelize";
-import { createApp } from "./app";
-import { bindTestTransaction, sequelize } from "./db/sequelize";
+import { createApp } from "./app.js";
+import { bindTestTransaction, sequelize } from "./db/sequelize.js";
 
 export async function withApp(fn: (base: string, transaction: Transaction) => Promise<void>): Promise<void> {
   const transaction = await sequelize.transaction();

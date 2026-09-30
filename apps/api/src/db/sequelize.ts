@@ -1,5 +1,5 @@
 import { Sequelize, type Transaction } from "sequelize";
-import config from "./config";
+import config from "./config.js";
 
 const db = config.development;
 

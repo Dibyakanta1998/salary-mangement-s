@@ -8,11 +8,11 @@ import {
   where,
   type WhereOptions,
 } from "sequelize";
-import lookups from "./lookups";
-import { Employee } from "./db/employee";
-import { SalaryChange } from "./db/salaryChange";
-import { currentTestTransaction, sequelize } from "./db/sequelize";
-import type { CreatePerson, ListPeopleQuery, UpdatePerson } from "./employee.schema";
+import lookups from "./lookups.js";
+import { Employee } from "./db/employee.js";
+import { SalaryChange } from "./db/salaryChange.js";
+import { currentTestTransaction, sequelize } from "./db/sequelize.js";
+import type { CreatePerson, ListPeopleQuery, UpdatePerson } from "./employee.schema.js";
 
 export class AppError extends Error {
   constructor(

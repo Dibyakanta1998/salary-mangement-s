@@ -1,5 +1,5 @@
 import { z } from "zod";
-import lookups from "./lookups";
+import lookups from "./lookups.js";
 
 const countryNames = lookups.countries.map((country) => country.name) as [string, ...string[]];
 const levelNames = [...lookups.levels] as [string, ...string[]];

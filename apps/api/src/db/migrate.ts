@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
-import config from "./config";
+import config from "./config.js";
 
 const RETRIES = 30;
 const RETRY_MS = 1000;

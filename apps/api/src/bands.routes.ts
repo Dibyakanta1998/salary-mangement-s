@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteBand, getBands, getOutside, putBand } from "./bands.controller";
+import { deleteBand, getBands, getOutside, putBand } from "./bands.controller.js";
 
 export const bandsRouter = Router();
 

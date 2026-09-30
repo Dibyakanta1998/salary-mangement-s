@@ -1,8 +1,8 @@
 import { QueryTypes, Transaction } from "sequelize";
-import { currentTestTransaction, sequelize } from "./db/sequelize";
-import { AppError } from "./employee.service";
-import type { FiguresQuery } from "./figures.schema";
-import lookups from "./lookups";
+import { currentTestTransaction, sequelize } from "./db/sequelize.js";
+import { AppError } from "./employee.service.js";
+import type { FiguresQuery } from "./figures.schema.js";
+import lookups from "./lookups.js";
 
 const medianSql = `
 ROUND(

@@ -1,9 +1,9 @@
 import express, { type ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
-import { bandsRouter } from "./bands.routes";
-import { employeeRouter } from "./employee.routes";
-import { AppError } from "./employee.service";
-import { figuresRouter } from "./figures.routes";
+import { bandsRouter } from "./bands.routes.js";
+import { employeeRouter } from "./employee.routes.js";
+import { AppError } from "./employee.service.js";
+import { figuresRouter } from "./figures.routes.js";
 
 const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof ZodError) {

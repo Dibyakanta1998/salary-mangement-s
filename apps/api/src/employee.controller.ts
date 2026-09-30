@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { createPersonSchema, listPeopleQuerySchema, personQuerySchema, updatePersonSchema } from "./employee.schema";
+import { createPersonSchema, listPeopleQuerySchema, personQuerySchema, updatePersonSchema } from "./employee.schema.js";
 import {
   AppError,
   createEmployee,
@@ -7,7 +7,7 @@ import {
   listEmployees,
   listRecentChanges,
   updateEmployee,
-} from "./employee.service";
+} from "./employee.service.js";
 
 function asyncRoute(handler: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {

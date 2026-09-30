@@ -1,9 +1,9 @@
 import { QueryTypes } from "sequelize";
-import { SalaryBand } from "./db/salaryBand";
-import { currentTestTransaction, sequelize } from "./db/sequelize";
-import { AppError } from "./employee.service";
-import type { BandBody } from "./bands.schema";
-import lookups from "./lookups";
+import { SalaryBand } from "./db/salaryBand.js";
+import { currentTestTransaction, sequelize } from "./db/sequelize.js";
+import { AppError } from "./employee.service.js";
+import type { BandBody } from "./bands.schema.js";
+import lookups from "./lookups.js";
 
 export type BandJson = {
   country: string;
