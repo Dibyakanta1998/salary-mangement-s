@@ -1,0 +1,11 @@
+{
+  "countries": [
+    { "name": "India", "currency": "INR" },
+    { "name": "United States", "currency": "USD" },
+    { "name": "United Kingdom", "currency": "GBP" },
+    { "name": "Germany", "currency": "EUR" },
+    { "name": "Singapore", "currency": "SGD" }
+  ],
+  "levels": ["L1", "L2", "L3", "L4", "L5", "L6"],
+  "departments": ["Engineering", "Sales", "People", "Finance", "Operations"]
+}
