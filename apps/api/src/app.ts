@@ -1,5 +1,6 @@
 import express, { type ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
+import { bandsRouter } from "./bands.routes";
 import { employeeRouter } from "./employee.routes";
 import { AppError } from "./employee.service";
 import { figuresRouter } from "./figures.routes";
@@ -31,6 +32,7 @@ export function createApp(): express.Express {
   });
   app.use("/api", employeeRouter);
   app.use("/api", figuresRouter);
+  app.use("/api", bandsRouter);
   app.use(handleError);
   return app;
 }
