@@ -157,11 +157,12 @@ describe("people", { concurrency: false }, () => {
 
   test("list defaults to active, page size 50, sorted by legal name then employee id", async () => {
     await withApp(async (base) => {
+      const namePrefix = "pqlist7k2m";
       const left = await postPerson(
         base,
         personBody({
           employeeId: "left-1",
-          legalName: "Aaa",
+          legalName: `${namePrefix} Aaa`,
           status: "left",
           leaveDate: "2024-05-01",
           annualBase: "10.00",
@@ -172,22 +173,26 @@ describe("people", { concurrency: false }, () => {
         const suffix = String(index).padStart(2, "0");
         const response = await postPerson(
           base,
-          personBody({ employeeId: `id-${suffix}`, legalName: `Name ${suffix}`, annualBase: "1.50" }),
+          personBody({
+            employeeId: `id-${suffix}`,
+            legalName: `${namePrefix} Name ${suffix}`,
+            annualBase: "1.50",
+          }),
         );
         assert.equal(response.status, 201);
       }
       const second = await postPerson(
         base,
-        personBody({ employeeId: "b", legalName: "Aaron", annualBase: "1000.00" }),
+        personBody({ employeeId: "b", legalName: `${namePrefix} Aaron`, annualBase: "1000.00" }),
       );
       const first = await postPerson(
         base,
-        personBody({ employeeId: "a", legalName: "Aaron", annualBase: "1000.00" }),
+        personBody({ employeeId: "a", legalName: `${namePrefix} Aaron`, annualBase: "1000.00" }),
       );
       assert.equal(second.status, 201);
       assert.equal(first.status, 201);
 
-      const response = await fetch(`${base}/api/people`);
+      const response = await fetch(`${base}/api/people?q=${encodeURIComponent(namePrefix)}`);
       assert.equal(response.status, 200);
       const body = await readJson<ListBody>(response);
       assert.deepEqual(Object.keys(body).sort(), ["page", "pageSize", "people", "total"]);
@@ -195,12 +200,13 @@ describe("people", { concurrency: false }, () => {
       assert.equal(body.pageSize, 50);
       assert.equal(body.total, 51);
       assert.equal(body.people.length, 50);
+      assert.ok(body.people.every((person) => person.legalName.startsWith(`${namePrefix} `)));
       assert.equal(body.people[0].employeeId, "a");
-      assert.equal(body.people[0].legalName, "Aaron");
+      assert.equal(body.people[0].legalName, `${namePrefix} Aaron`);
       assert.equal(body.people[1].employeeId, "b");
-      assert.equal(body.people[1].legalName, "Aaron");
-      assert.equal(body.people[2].legalName, "Name 00");
-      assert.equal(body.people[49].legalName, "Name 47");
+      assert.equal(body.people[1].legalName, `${namePrefix} Aaron`);
+      assert.equal(body.people[2].legalName, `${namePrefix} Name 00`);
+      assert.equal(body.people[49].legalName, `${namePrefix} Name 47`);
       assert.equal(body.people.some((person) => person.employeeId === "left-1"), false);
       assert.equal(body.people[0].annualBase, "1000.00");
       assert.equal(typeof body.people[0].annualBase, "string");
