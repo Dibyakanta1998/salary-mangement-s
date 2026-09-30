@@ -5,7 +5,7 @@ dev:
 
 test:
 	docker compose up -d db
-	docker compose run --rm --build api node --test --test-concurrency=1 dist/employee.test.js
+	docker compose run --rm --build api node --test --test-concurrency=1 dist/employee.test.js dist/figures.test.js
 
 reset:
 	docker compose down -v

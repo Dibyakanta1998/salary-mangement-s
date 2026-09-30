@@ -1,13 +1,11 @@
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
-import type { AddressInfo } from "node:net";
 import path from "node:path";
 import { after, before, describe, test } from "node:test";
 import type { Transaction } from "sequelize";
 import { QueryTypes } from "sequelize";
-import { createApp } from "./app";
 import { migrate, waitForPostgres } from "./db/migrate";
-import { bindTestTransaction, sequelize } from "./db/sequelize";
+import { sequelize } from "./db/sequelize";
+import { withApp } from "./test-harness";
 
 type Person = {
   employeeId: string;
@@ -56,26 +54,6 @@ function personBody(overrides: Record<string, unknown> = {}): Record<string, unk
     leaveDate: null,
     ...overrides,
   };
-}
-
-async function withApp(fn: (base: string, transaction: Transaction) => Promise<void>): Promise<void> {
-  const transaction = await sequelize.transaction();
-  bindTestTransaction(transaction);
-  const server = createServer(createApp());
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const { port } = server.address() as AddressInfo;
-  try {
-    await fn(`http://127.0.0.1:${port}`, transaction);
-  } finally {
-    bindTestTransaction(undefined);
-    try {
-      await transaction.rollback();
-    } finally {
-      await new Promise<void>((resolve, reject) => {
-        server.close((error) => (error ? reject(error) : resolve()));
-      });
-    }
-  }
 }
 
 async function postPerson(base: string, body: unknown): Promise<Response> {

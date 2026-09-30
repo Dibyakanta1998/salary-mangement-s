@@ -2,6 +2,7 @@ import express, { type ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
 import { employeeRouter } from "./employee.routes";
 import { AppError } from "./employee.service";
+import { figuresRouter } from "./figures.routes";
 
 const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof ZodError) {
@@ -29,6 +30,7 @@ export function createApp(): express.Express {
     res.json({ ok: true });
   });
   app.use("/api", employeeRouter);
+  app.use("/api", figuresRouter);
   app.use(handleError);
   return app;
 }
